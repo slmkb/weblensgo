@@ -1,0 +1,26 @@
+<h1>Joł, {{.Name}}</h1>
+
+<p>Raw struct:</p>
+<pre>{{.}}</pre>
+
+<p>Raw TestSlice:</p>
+<pre>{{.TestSlice}}</pre>
+
+{{if .TestSlice}}
+<ol>testSlice:
+    {{range .TestSlice}}
+    <li>{{.}}</li>
+    {{end}}
+</ol>
+{{end}}
+
+<p>Raw TestMap:</p>
+<pre>{{.TestMap}}</pre>
+
+{{if .TestMap}}
+<ul>testMap:
+    {{range $k, $v := .TestMap}}
+    <li>{{$k}}:{{$v}}|{{.}}</li>
+    {{end}}
+</ul>
+{{end}}

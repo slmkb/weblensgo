@@ -1,0 +1,20 @@
+<h1>Joł, {{.Name}}</h1>
+<p>{{.Age}} years old You are.</p>
+
+<pre>Raw:
+{{.}}
+</pre>
+<pre>Raw Nested struct:
+{{.Nested}}
+</pre>
+
+<pre>Raw Nested.NestedMap:
+{{.Nested.NestedMap}}
+</pre>
+<ul>
+{{range $k,$v := .Nested.NestedMap}}
+<li>{{$k}}:{{$v}}</li>
+{{end}}
+</ul>
+
+{{index .Nested.NestedMap "Value1" }}
