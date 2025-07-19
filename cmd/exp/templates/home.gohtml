@@ -1,0 +1,26 @@
+<h1>Joł, {{.Name}}</h1>
+
+<p>Raw struct:</p>
+<pre>{{.}}</pre>
+
+<p>Raw TestSlice:</p>
+<pre>{{.Nested.NestedSlice}}</pre>
+
+{{if .Nested.NestedSlice}}
+<ol>testSlice:
+    {{range .Nested.NestedSlice}}
+    <li>{{.}}</li>
+    {{end}}
+</ol>
+{{end}}
+
+<p>Raw TestMap:</p>
+<pre>{{.Nested.NestedMap}}</pre>
+
+{{if .Nested.NestedMap}}
+<ul>testMap:
+    {{range $k, $v := .Nested.NestedMap}}
+    <li>{{$k}}:{{$v}}|{{.}}</li>
+    {{end}}
+</ul>
+{{end}}
