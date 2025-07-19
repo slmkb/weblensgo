@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
 
@@ -103,6 +104,15 @@ func main() {
 	r.With(middleware.Logger).Get("/", homeHandler)
 
 	r.Get("/dummy", dummyHanlder)
-	http.ListenAndServe(":4000", r)
+
+	if err := CreateUser(); err != nil {
+		log.Println(err)
+	}
+
+	if err := CreateOrg(); err != nil {
+		log.Println(err)
+	}
+
+	// http.ListenAndServe(":4000", r)
 
 }
