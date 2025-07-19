@@ -1,6 +1,9 @@
 package main
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 func Connect() error {
 	return errors.New("connection failed")
@@ -8,14 +11,14 @@ func Connect() error {
 
 func CreateUser() error {
 	if err := Connect(); err != nil {
-		return err
+		return fmt.Errorf("create user: %w", err)
 	}
 	return nil
 }
 
 func CreateOrg() error {
 	if err := CreateUser(); err != nil {
-		return err
+		return fmt.Errorf("create org: %w", err)
 	}
 	return nil
 }
