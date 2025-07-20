@@ -7,29 +7,24 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/slmkb/weblensgo/controllers"
+	"github.com/slmkb/weblensgo/templates"
 	"github.com/slmkb/weblensgo/views"
 )
 
 func main() {
 	r := chi.NewRouter()
 
-	homeTpl, err := views.Parse(filepath.Join("templates", "home.gohtml"))
-	if err != nil {
-		panic(err)
-	}
+	homeTpl := views.Must(views.Parse(filepath.Join("templates", "home.gohtml")))
 	r.With(middleware.Logger).Get("/", controllers.StaticHandler(homeTpl))
 
-	contactTpl, err := views.Parse(filepath.Join("templates", "contact.gohtml"))
-	if err != nil {
-		panic(err)
-	}
-
+	contactTpl := views.Must(views.Parse("templates/base.gohtml", "templates/contact.gohtml"))
 	r.Get("/contact", controllers.StaticHandler(contactTpl))
-	faqTpl, err := views.Parse(filepath.Join("templates", "faq.gohtml"))
-	if err != nil {
-		panic(err)
-	}
-	r.Get("/faq", controllers.StaticHandler(faqTpl))
+
+	r.Get("/faq", controllers.FAQ(
+		views.Must(views.ParseFS(templates.FS, "base.gohtml", "faq.gohtml"))))
+
+	r.Get("/admin", controllers.StaticHandler(
+		views.Must(views.Parse(filepath.Join("templates", "admin.gohtml")))))
 
 	http.ListenAndServe(":3000", r)
 }
