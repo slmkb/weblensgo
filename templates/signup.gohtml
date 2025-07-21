@@ -1,0 +1,31 @@
+{{define "style"}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css">
+<style>
+  section.pico {
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background-color: rgb(39, 42.5, 50.5);
+    width: 100%;
+    max-width: 500px;
+    justify-self: center;
+  }
+</style>
+{{end}}
+{{define "page"}}
+<section class="pico" class="pico-color-red-150">
+  <h2>Sign Up</h2>
+  <p>asdf</p>
+  <form action="/signup" method="post">
+    <label for="email">Email</label>
+    <input type="email" name="email" placeholder="Enter Email" aria-label="email address" autocomplete="email" required
+      {{if .Email}}value="{{.Email}}" {{else}} autofocus {{end}} />
+    <label for="password">Password</label>
+    <input type="password" name="password" placeholder="Enter Password" aria-label="password" required {{if .Email}}
+      autofocus {{end}} />
+    <label for="password-repeat">Repeat Password</label>
+    <input type="password" name="password-repeat" placeholder="Repeat Password" aria-label="password" required />
+    <button type="submit">Sign Up</button>
+  </form>
+</section>
+{{end}}

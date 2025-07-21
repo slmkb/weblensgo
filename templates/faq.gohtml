@@ -1,13 +1,16 @@
+{{define "style"}}
+{{end}}
+
 {{define "page"}}
 
 <h1>FAQ Page</h1>
 <ul>
-{{range .}}
-{{template "qa" .}}
-{{end}}
+    {{range .}}
+    {{template "qa" .}}
+    {{end}}
 
-{{end}}
+    {{end}}
 
-{{define "qa"}}
-<li><b>{{.Question}}</b> {{.Answer}}</li>
-{{end}}
+    {{define "qa"}}
+    <li><b>{{.Question}}</b> {{.Answer}}</li>
+    {{end}}

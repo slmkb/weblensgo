@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"path/filepath"
 
@@ -26,5 +27,12 @@ func main() {
 	r.Get("/admin", controllers.StaticHandler(
 		views.Must(views.Parse(filepath.Join("templates", "admin.gohtml")))))
 
+	var usersCtrl controllers.Users
+	usersCtrl.Template.New = views.Must(views.Parse("templates/base.gohtml", "templates/signup.gohtml"))
+	r.With(middleware.Logger).Get("/signup", usersCtrl.New)
+
+	r.With(middleware.Logger).Post("/signup", usersCtrl.Create)
+
 	http.ListenAndServe(":3000", r)
+	fmt.Println("Exiting???")
 }

@@ -3,21 +3,19 @@ package controllers
 import (
 	"html/template"
 	"net/http"
-
-	"github.com/slmkb/weblensgo/views"
 )
 
 type Static struct {
-	Template views.Template
+	Template Templater
 }
 
-func StaticHandler(tpl views.Template) http.HandlerFunc {
+func StaticHandler(tpl Templater) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tpl.Execute(w, nil)
 	}
 }
 
-func FAQ(tpl views.Template) http.HandlerFunc {
+func FAQ(tpl Templater) http.HandlerFunc {
 	questions := []struct {
 		Question string
 		Answer   template.HTML
