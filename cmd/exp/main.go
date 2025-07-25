@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"html/template"
 	"image"
@@ -15,6 +16,8 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	_ "github.com/jackc/pgx/stdlib"
+	"github.com/slmkb/weblensgo/models"
 )
 
 func parameterHandler(w http.ResponseWriter, r *http.Request) {
@@ -123,6 +126,8 @@ func main() {
 		log.Println(err)
 	}
 
+	testDBCreation()
+
 	http.ListenAndServe(":4000", r)
 
 }
@@ -159,4 +164,40 @@ func lissajous(out io.Writer) {
 		anim.Image = append(anim.Image, img)
 	}
 	gif.EncodeAll(out, &anim) // NOTE: ignoring encoding errors
+}
+
+type PostgresConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	Database string
+	SSLMode  string
+}
+
+func (cfg PostgresConfig) String() string {
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.SSLMode)
+}
+
+func testDBCreation() {
+
+	cfg := models.DefaultPostgresConfig()
+	db, err := sql.Open("pgx", cfg.String())
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Connected!")
+	us := models.UserService{
+		DB: db,
+	}
+	user, err := us.Create("bob2@bob.com", "bob123")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(user)
 }
