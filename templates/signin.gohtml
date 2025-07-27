@@ -2,20 +2,34 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css">
 <style>
     section.pico {
+        margin: 0 auto;
         padding: 2rem;
         border-radius: 8px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         background-color: rgb(39, 42.5, 50.5);
         width: 100%;
-        max-width: 500px;
-        justify-self: center;
+        max-width: 600px;
+    }
+
+    .auth-links {
+        display: flex;
+        /* Use flexbox layout */
+        justify-content: space-between;
+        /* Spread out items with space in between */
+        width: 100%;
+        /* Ensure the container takes up the full width */
+    }
+
+    .auth-links p {
+        font-size: medium;
+        margin: 0;
+        /* Remove default margin */
     }
 </style>
 {{end}}
 {{define "page"}}
 <section class="pico" class="pico-color-red-150">
-    <h2>Sign Up</h2>
-    <p>asdf</p>
+    <h2>Log In</h2>
     <form action="/signin" method="post">
         <label for="email">Email</label>
         <input type="email" name="email" placeholder="Enter Email" aria-label="email address" autocomplete="email"
@@ -23,6 +37,17 @@
         <label for="password">Password</label>
         <input type="password" name="password" placeholder="Enter Password" aria-label="password" required {{if .Email}}
             autofocus {{end}} />
+        {{if .AuthError}}
+        <div class="auth-error">
+            <p>Incorrect email and/or password.</p>
+        </div>
+        {{end}}
+        {{csrfField}}
+        <button type="submit">Sign Up</button>
     </form>
+    <div class="auth-links">
+        <p>No account? <a href="/signup">Sign up</a></p>
+        <p>Forgot your password? <a href="#">Reset password</a></p>
+    </div>
 </section>
 {{end}}

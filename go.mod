@@ -15,6 +15,8 @@ require (
 require (
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
+	github.com/gorilla/csrf v1.7.3 // indirect
+	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

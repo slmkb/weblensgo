@@ -47,3 +47,24 @@ func (us *UserService) Create(email, password string) (*User, error) {
 
 	return &user, nil
 }
+
+func (us *UserService) GetUser(email, password string) (*User, error) {
+	email = strings.ToLower(email)
+
+	row := us.DB.QueryRow(`
+	SELECT * FROM users WHERE
+	email = $1`, email)
+
+	var user User
+	if err := row.Scan(&user.ID, &user.Email, &user.PasswordHash); err != nil {
+		return nil, fmt.Errorf("get user: %w", err)
+	}
+
+	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		return nil, fmt.Errorf("get user: %w", err)
+	}
+
+	return &user, nil
+
+}

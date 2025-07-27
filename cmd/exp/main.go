@@ -201,3 +201,25 @@ func testDBCreation() {
 	}
 	fmt.Println(user)
 }
+
+// r.With(middleware.Logger).Post("/signin", MiddHandlerFunc(usersCtrl.ExecuteSignIn))
+// http.ListenAndServe(":3000", MiddHandlerFunc(r.ServeHTTP))
+func MiddHandlerFunc(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Middleware-Header", "Value")
+		h(w, r)
+		log.Printf("Custom header middleware...")
+	}
+}
+
+// IDIOMATIC
+// r.Use(MiddHandler)
+// r.With(middleware.Logger, MiddHandler).Post("/signin", usersCtrl.ExecuteSignIn)
+// http.ListenAndServe(":3000", MiddHandler(r))
+func MiddHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Middleware-Header", "Value")
+		next.ServeHTTP(w, r)
+		log.Printf("Custom header middleware...")
+	})
+}
