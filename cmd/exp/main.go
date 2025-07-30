@@ -1,7 +1,7 @@
 package main
 
 import (
-	"database/sql"
+	// "database/sql"
 	"fmt"
 	"html/template"
 	"image"
@@ -17,7 +17,8 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	_ "github.com/jackc/pgx/stdlib"
-	"github.com/slmkb/weblensgo/models"
+	"github.com/slmkb/weblensgo/cmd/exp/dup"
+	// "github.com/slmkb/weblensgo/models"
 )
 
 func parameterHandler(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +75,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	dup.Dup()
 	t, err := template.ParseFiles("hello.gohtml")
 	if err != nil {
 		panic(err)
@@ -126,7 +128,7 @@ func main() {
 		log.Println(err)
 	}
 
-	testDBCreation()
+	// testDBCreation()
 
 	http.ListenAndServe(":4000", r)
 
@@ -179,28 +181,28 @@ func (cfg PostgresConfig) String() string {
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.SSLMode)
 }
 
-func testDBCreation() {
+// func testDBCreation() {
 
-	cfg := models.DefaultPostgresConfig()
-	db, err := sql.Open("pgx", cfg.String())
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-	err = db.Ping()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Connected!")
-	us := models.UserService{
-		DB: db,
-	}
-	user, err := us.Create("bob2@bob.com", "bob123")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(user)
-}
+// 	cfg := models.DefaultPostgresConfig()
+// 	db, err := sql.Open("pgx", cfg.String())
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	defer db.Close()
+// 	err = db.Ping()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	fmt.Println("Connected!")
+// 	us := models.UserService{
+// 		DB: db,
+// 	}
+// 	user, err := us.Create("bob2@bob.com", "bob123")
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	fmt.Println(user)
+// }
 
 // r.With(middleware.Logger).Post("/signin", MiddHandlerFunc(usersCtrl.ExecuteSignIn))
 // http.ListenAndServe(":3000", MiddHandlerFunc(r.ServeHTTP))

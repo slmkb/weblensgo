@@ -15,6 +15,22 @@ import (
 )
 
 func main() {
+	cfg := models.DefaultPostgresConfig()
+	db, err := models.Open(cfg)
+	if err != nil {
+		log.Fatalf("database open: %v", err)
+	}
+	defer db.Close()
+
+	usersCtrl := controllers.Users{
+		UserService: &models.UserService{
+			DB: db,
+		},
+		SessionService: &models.SessionService{
+			DB: db,
+		},
+	}
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
@@ -27,29 +43,15 @@ func main() {
 	r.Get("/faq", controllers.FAQ(
 		views.Must(views.ParseFS(templates.FS, "base.gohtml", "faq.gohtml"))))
 
-	cfg := models.DefaultPostgresConfig()
-	db, err := models.Open(cfg)
-	if err != nil {
-		log.Fatalf("database open: %v", err)
-	}
-	defer db.Close()
-
-	userService := models.UserService{
-		DB: db,
-	}
-
-	usersCtrl := controllers.Users{
-		UserService: &userService,
-	}
-
 	usersCtrl.Template.SignUp = views.Must(views.ParseFS(templates.FS, "base.gohtml", "signup.gohtml"))
 	usersCtrl.Template.SignIn = views.Must(views.ParseFS(templates.FS, "base.gohtml", "signin.gohtml"))
 	r.Get("/signup", usersCtrl.New)
-
 	r.Post("/signup", usersCtrl.Create)
 
 	r.Get("/signin", usersCtrl.Signin)
 	r.With(middleware.Logger).Post("/signin", usersCtrl.ExecuteSignIn)
+
+	r.Get("/users/me", usersCtrl.CurrentUser)
 
 	csrfKey := "abcdefghijklmnopqrstuvwxyz"
 	csrfMw := csrf.Protect(
