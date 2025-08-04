@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/csrf"
+	"github.com/slmkb/weblensgo/context"
 	"github.com/slmkb/weblensgo/models"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,6 +21,41 @@ type Users struct {
 	}
 	UserService    *models.UserService
 	SessionService *models.SessionService
+}
+
+type UserMiddleware struct {
+	SessionService *models.SessionService
+}
+
+func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := readCookie(r, CookieSession)
+		if err != nil {
+			log.Printf("set user: %+v", err)
+			next.ServeHTTP(w, r)
+			return
+		}
+		user, err := umw.SessionService.GetUser(token)
+		if err != nil {
+			log.Printf("set user: %+v", err)
+			next.ServeHTTP(w, r)
+			return
+		}
+		ctx := context.WithUser(r.Context(), user)
+		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (umw UserMiddleware) RequireUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := context.User(r.Context())
+		if user == nil {
+			http.Redirect(w, r, "/signin", http.StatusFound)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (u Users) New(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +86,6 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setCookie(w, CookieSession, session.Token)
-	// fmt.Fprintf(w, "user created successfully: %+v", user)
 	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
 
@@ -63,9 +98,7 @@ func (u Users) Signin(w http.ResponseWriter, r *http.Request) {
 	data.CSRFField = csrf.TemplateField(r)
 	data.Email = r.FormValue("email")
 	data.AuthError = r.FormValue("error")
-	// fmt.Fprintf(w, "HEADERD: %+v", r.Header)
 	u.Template.SignIn.Execute(w, r, data)
-	// fmt.Fprintf(w, "%s:%s", email, password)
 }
 
 func (u Users) ExecuteSignIn(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +113,6 @@ func (u Users) ExecuteSignIn(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		// fmt.Println(err)
 		return
 	}
 
@@ -91,24 +123,27 @@ func (u Users) ExecuteSignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setCookie(w, CookieSession, session.Token)
-	// fmt.Fprintf(w, "user logged in successfully: %+v", user)
 	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
 
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Current user: %+v\n", context.User(r.Context()))
+}
+
+func (u Users) SignOut(w http.ResponseWriter, r *http.Request) {
 	token, err := readCookie(r, CookieSession)
 	if err != nil {
-		log.Printf("current user: %+v", err)
+		log.Printf("sign out: %+v", err)
 		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
-
-	user, err := u.SessionService.GetUser(token)
+	err = u.SessionService.DeleteSession(token)
 	if err != nil {
-		log.Printf("current user: %+v", err)
+		log.Printf("sign out: %+v", err)
 		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
-	fmt.Fprintf(w, "Current user: %+v\n", user)
-	fmt.Fprintf(w, "Session data: %+v\n", token)
+	deleteCookie(w, CookieSession)
+	log.Printf("logged out")
+	http.Redirect(w, r, "/signin", http.StatusFound)
 }

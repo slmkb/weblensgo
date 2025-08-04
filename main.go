@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/slmkb/weblensgo/controllers"
 	"github.com/slmkb/weblensgo/models"
+	sqlFS "github.com/slmkb/weblensgo/models/sql"
 	"github.com/slmkb/weblensgo/templates"
 	"github.com/slmkb/weblensgo/views"
 )
@@ -30,28 +31,20 @@ func main() {
 			DB: db,
 		},
 	}
+	userMw := controllers.UserMiddleware{
+		SessionService: usersCtrl.SessionService,
+	}
 
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	err = models.MigrateFS(db, sqlFS.FS, "")
+	if err != nil {
+		log.Fatalf("migrate: %v", err)
+	}
 
 	homeTpl := views.Must(views.ParseFS(templates.FS, "base.gohtml", "home.gohtml"))
-	r.Get("/", controllers.StaticHandler(homeTpl))
-
 	contactTpl := views.Must(views.ParseFS(templates.FS, "base.gohtml", "contact.gohtml"))
-	r.Get("/contact", controllers.StaticHandler(contactTpl))
-
-	r.Get("/faq", controllers.FAQ(
-		views.Must(views.ParseFS(templates.FS, "base.gohtml", "faq.gohtml"))))
-
 	usersCtrl.Template.SignUp = views.Must(views.ParseFS(templates.FS, "base.gohtml", "signup.gohtml"))
 	usersCtrl.Template.SignIn = views.Must(views.ParseFS(templates.FS, "base.gohtml", "signin.gohtml"))
-	r.Get("/signup", usersCtrl.New)
-	r.Post("/signup", usersCtrl.Create)
-
-	r.Get("/signin", usersCtrl.Signin)
-	r.With(middleware.Logger).Post("/signin", usersCtrl.ExecuteSignIn)
-
-	r.Get("/users/me", usersCtrl.CurrentUser)
+	faqTpl := views.Must(views.ParseFS(templates.FS, "base.gohtml", "faq.gohtml"))
 
 	csrfKey := "abcdefghijklmnopqrstuvwxyz"
 	csrfMw := csrf.Protect(
@@ -62,14 +55,29 @@ func main() {
 			log.Printf("[CSRF BLOCKED] Host=%s, Method=%s, URL=%s, Origin=%s, Referer=%s, Reason=%v",
 				r.Host, r.Method, r.URL.String(), r.Header.Get("Origin"), r.Header.Get("Referer"), csrf.FailureReason(r))
 
-			// Respond with default 403 Forbidden
 			http.Error(w, "Forbidden - CSRF check failed", http.StatusForbidden)
 		})),
 	)
+	// ctxMw := usersCtrl.SessionService.SetUser
+
+	r := chi.NewRouter()
+	r.Use(middleware.Logger, csrfMw, userMw.SetUser)
+
+	r.Get("/", controllers.StaticHandler(homeTpl))
+	r.Get("/contact", controllers.StaticHandler(contactTpl))
+	r.Get("/faq", controllers.FAQ(faqTpl))
+	r.Get("/signup", usersCtrl.New)
+	r.Post("/signup", usersCtrl.Create)
+	r.Get("/signin", usersCtrl.Signin)
+	r.Get("/signout", usersCtrl.SignOut)
+	r.With( /*middleware.Logger*/ ).Post("/signin", usersCtrl.ExecuteSignIn)
+	r.Route("/users/me", func(r chi.Router) {
+		r.Use(userMw.RequireUser)
+		r.Get("/", usersCtrl.CurrentUser)
+	})
+	// r.With(userMw.RequireUser).Get("/users/me", usersCtrl.CurrentUser)
 
 	fmt.Println("Starting server...")
-
-	// r.Use(csrfMw)
-	http.ListenAndServe(":3000", csrfMw(r))
+	http.ListenAndServe(":3000", r)
 	fmt.Println("Exiting...")
 }

@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/csrf"
+	"github.com/slmkb/weblensgo/context"
+	"github.com/slmkb/weblensgo/models"
 )
 
 type Template struct {
@@ -27,6 +29,9 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any) {
 			"csrfField": func() template.HTML {
 				return csrf.TemplateField(r)
 			},
+			"currentUser": func() *models.User {
+				return context.User(r.Context())
+			},
 		},
 	)
 	if err := tpl.Execute(w, data); err != nil {
@@ -43,6 +48,9 @@ func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
 		template.FuncMap{
 			"csrfField": func() (template.HTML, error) {
 				return "", fmt.Errorf("csrfFiled not implemented")
+			},
+			"currentUser": func() (template.HTML, error) {
+				return "", fmt.Errorf("loggedIn not implemented")
 			},
 		},
 	)

@@ -32,11 +32,11 @@
     <h2>Log In</h2>
     <form action="/signin" method="post">
         <label for="email">Email</label>
-        <input type="email" name="email" placeholder="Enter Email" aria-label="email address" autocomplete="email"
-            required {{if .Email}}value="{{.Email}}" {{else}} autofocus {{end}} />
+        <input id="email" type="email" name="email" placeholder="Enter Email" aria-label="email address"
+            autocomplete="email" required {{if .Email}}value="{{.Email}}" {{else}} autofocus {{end}} />
         <label for="password">Password</label>
-        <input type="password" name="password" placeholder="Enter Password" aria-label="password" required {{if .Email}}
-            autofocus {{end}} />
+        <input id="password" type="password" name="password" placeholder="Enter Password" aria-label="password" required
+            {{if .Email}} autofocus {{end}} />
         {{if .AuthError}}
         <div class="auth-error">
             <p>Incorrect email and/or password.</p>

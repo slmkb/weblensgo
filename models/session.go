@@ -55,7 +55,7 @@ func (ss *SessionService) GetUser(token string) (*User, error) {
 			users.email,
 			users.password_hash
 		FROM sessions
-			INNER JOIN users ON sessions.user_id = users.id
+		INNER JOIN users ON sessions.user_id = users.id
 		WHERE token_hash = $1;
 	`, tokenHash)
 
@@ -64,6 +64,19 @@ func (ss *SessionService) GetUser(token string) (*User, error) {
 		return nil, fmt.Errorf("session service getuser: %w", err)
 	}
 	return &user, nil
+}
+
+func (ss *SessionService) DeleteSession(token string) error {
+	tokenHash := ss.hash(token)
+	_, err := ss.DB.Exec(`
+		DELETE
+		FROM sessions
+		WHERE token_hash = $1;
+	`, tokenHash)
+	if err != nil {
+		return fmt.Errorf("delete session: %w", err)
+	}
+	return nil
 }
 
 func (ss *SessionService) hash(token string) string {
