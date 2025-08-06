@@ -1,7 +1,7 @@
 {{define "style"}}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css">
 <style>
-  section.pico1 {
+  section.pico {
     margin: 0 auto;
     padding: 2rem;
     border-radius: 8px;
@@ -28,7 +28,7 @@
 </style>
 {{end}}
 {{define "page"}}
-<section class="pico1">
+<section class="pico">
   <h2>Create account</h2>
   <form action="/signup" method="post">
     <label for="email">Email</label>
@@ -44,6 +44,7 @@
   </form>
   <div class="auth-links">
     <p>Have an account? <a href="/signin">Log in</a></p>
+    <p>Forgot your password? <a href="/password-reset">Reset password</a></p>
   </div>
 </section>
 {{end}}

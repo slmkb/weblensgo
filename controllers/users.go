@@ -16,11 +16,15 @@ import (
 
 type Users struct {
 	Template struct {
-		SignUp Templater
-		SignIn Templater
+		SignUp         Templater
+		SignIn         Templater
+		PasswordReset  Templater
+		UpdatePassword Templater
 	}
-	UserService    *models.UserService
-	SessionService *models.SessionService
+	UserService          *models.UserService
+	SessionService       *models.SessionService
+	EmailService         *models.EmailService
+	PasswordResetService *models.PasswordResetService
 }
 
 type UserMiddleware struct {
@@ -32,6 +36,11 @@ func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
 		token, err := readCookie(r, CookieSession)
 		if err != nil {
 			log.Printf("set user: %+v", err)
+			next.ServeHTTP(w, r)
+			return
+		}
+		if len(token) != 44 {
+			log.Printf("token length violation")
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -146,4 +155,58 @@ func (u Users) SignOut(w http.ResponseWriter, r *http.Request) {
 	deleteCookie(w, CookieSession)
 	log.Printf("logged out")
 	http.Redirect(w, r, "/signin", http.StatusFound)
+}
+
+func (u Users) PasswordReset(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Email     string
+		CSRFField template.HTML
+	}
+	data.CSRFField = csrf.TemplateField(r)
+	data.Email = r.FormValue("email")
+	u.Template.PasswordReset.Execute(w, r, data)
+}
+
+func (u Users) SendPasswordResetEmail(w http.ResponseWriter, r *http.Request) {
+	email := r.FormValue("email")
+
+	pr, err := u.PasswordResetService.Create(email)
+	if err != nil {
+		log.Printf("send password reset email: %+v", err)
+		return
+	}
+	err = u.EmailService.ForgotPassword(pr)
+	if err != nil {
+		log.Printf("send password reset email: %+v", err)
+	}
+	fmt.Fprintf(w, "password reset: %#v", pr)
+}
+
+func (u Users) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Token     string
+		CSRFField template.HTML
+	}
+	data.CSRFField = csrf.TemplateField(r)
+	data.Token = r.FormValue("token")
+	u.Template.UpdatePassword.Execute(w, r, data)
+}
+
+func (u Users) ExecutePasswordReset(w http.ResponseWriter, r *http.Request) {
+	token := r.FormValue("token")
+	password := r.FormValue("password")
+
+	userID, err := u.PasswordResetService.Consume(token)
+	if err != nil {
+		log.Printf("execute password reset: %v", err)
+		return
+	}
+
+	err = u.UserService.UpdatePassword(userID, password)
+	if err != nil {
+		log.Printf("execute password reset: %v", err)
+		return
+	}
+
+	http.Redirect(w, r, "/signin", http.StatusSeeOther)
 }

@@ -68,3 +68,25 @@ func (us *UserService) GetUser(email, password string) (*User, error) {
 	return &user, nil
 
 }
+
+func (us *UserService) UpdatePassword(userID uuid.UUID, password string) error {
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+
+	res, err := us.DB.Exec(`
+	UPDATE users
+	SET password_hash = $1
+	WHERE id = $2
+	`, hashedBytes, userID)
+	if err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+	if rows, err := res.RowsAffected(); err != nil {
+		return fmt.Errorf("update password: %w", err)
+	} else if rows != 1 {
+		return fmt.Errorf("update password: userID %s not found", userID)
+	}
+	return nil
+}
