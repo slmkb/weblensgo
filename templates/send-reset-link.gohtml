@@ -28,18 +28,9 @@
 </style>
 {{end}}
 {{define "page"}}
-<section class="pico" class="pico-color-red-150">
-    <h2>Reset password</h2>
-    <form action="/password-reset" method="post">
-        <label for="email">Email</label>
-        <input id="email" type="email" name="email" placeholder="Enter Email" aria-label="email address"
-            autocomplete="email" required {{if .Email}}value="{{.Email}}" {{end}} autofocus />
-        {{csrfField}}
-        <button type="submit">Submit</button>
-    </form>
-    <div class="auth-links">
-        <p>No account? <a href="/signup">Sign up</a></p>
-        <p>Remember password? <a href="/signin">Sign in</a></p>
+<section class="pico">
+    <div>
+        <p>If this email exists, a reset link has been sent.</p>
     </div>
 </section>
 {{end}}

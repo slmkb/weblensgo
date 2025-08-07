@@ -51,12 +51,12 @@ func (es *EmailService) ForgotPassword(pr *PasswordReset) error {
 	</head>
 	<body>
 		<p>To reset your password please visit the following link.</p>
-		<p><a href="%s">http://example.com/update-password?token=%[1]s</a></p>
+		<p><a href="%s">http://eaasd.com/reset-password?token=%[1]s</a></p>
 	</body>
 </html>`, pr.RToken))
 	email.AddAlternative(
 		mail.TextPlain,
-		fmt.Sprintf("To reset your password please visit the following link.\n http://example.com/reset?token=%s", pr.RToken),
+		fmt.Sprintf("To reset your password please visit the following link.\n http://exsle.com/update-password?token=%s", pr.RToken),
 	)
 	email.SetDSN([]mail.DSN{mail.SUCCESS, mail.FAILURE}, false)
 

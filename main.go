@@ -55,10 +55,6 @@ func main() {
 		},
 	}
 
-	// if err := usersCtrl.EmailService.ForgotPassword(models.User{}); err != nil {
-	// 	log.Fatalf("email send: %+v", err)
-	// }
-
 	userMw := controllers.UserMiddleware{
 		SessionService: usersCtrl.SessionService,
 	}
@@ -72,8 +68,9 @@ func main() {
 	contactTpl := views.Must(views.ParseFS(templates.FS, "base.gohtml", "contact.gohtml"))
 	usersCtrl.Template.SignUp = views.Must(views.ParseFS(templates.FS, "base.gohtml", "signup.gohtml"))
 	usersCtrl.Template.SignIn = views.Must(views.ParseFS(templates.FS, "base.gohtml", "signin.gohtml"))
-	usersCtrl.Template.PasswordReset = views.Must(views.ParseFS(templates.FS, "base.gohtml", "password-reset.gohtml"))
-	usersCtrl.Template.UpdatePassword = views.Must(views.ParseFS(templates.FS, "base.gohtml", "update-password.gohtml"))
+	usersCtrl.Template.ForgotPassword = views.Must(views.ParseFS(templates.FS, "base.gohtml", "forgot-password.gohtml"))
+	usersCtrl.Template.ResetPassword = views.Must(views.ParseFS(templates.FS, "base.gohtml", "reset-password.gohtml"))
+	usersCtrl.Template.SendResetLink = views.Must(views.ParseFS(templates.FS, "base.gohtml", "send-reset-link.gohtml"))
 	faqTpl := views.Must(views.ParseFS(templates.FS, "base.gohtml", "faq.gohtml"))
 
 	csrfMw := csrf.Protect(
@@ -98,10 +95,10 @@ func main() {
 	r.Post("/signup", usersCtrl.Create)
 	r.Get("/signin", usersCtrl.Signin)
 	r.Get("/signout", usersCtrl.SignOut)
-	r.Get("/password-reset", usersCtrl.PasswordReset)
-	r.Post("/password-reset", usersCtrl.SendPasswordResetEmail)
-	r.Get("/update-password", usersCtrl.UpdatePassword)
-	r.Post("/update-password", usersCtrl.ExecutePasswordReset)
+	r.Get("/forgot-password", usersCtrl.ForgotPassword)
+	r.Post("/forgot-password", usersCtrl.SendPasswordResetEmail)
+	r.Get("/reset-password", usersCtrl.ResetPassword)
+	r.Post("/reset-password", usersCtrl.ExecuteResetPassword)
 	r.With( /*middleware.Logger*/ ).Post("/signin", usersCtrl.ExecuteSignIn)
 	r.Route("/users/me", func(r chi.Router) {
 		r.Use(userMw.RequireUser)

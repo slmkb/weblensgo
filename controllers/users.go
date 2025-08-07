@@ -18,8 +18,9 @@ type Users struct {
 	Template struct {
 		SignUp         Templater
 		SignIn         Templater
-		PasswordReset  Templater
-		UpdatePassword Templater
+		ForgotPassword Templater
+		ResetPassword  Templater
+		SendResetLink  Templater
 	}
 	UserService          *models.UserService
 	SessionService       *models.SessionService
@@ -157,14 +158,14 @@ func (u Users) SignOut(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/signin", http.StatusFound)
 }
 
-func (u Users) PasswordReset(w http.ResponseWriter, r *http.Request) {
+func (u Users) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Email     string
 		CSRFField template.HTML
 	}
 	data.CSRFField = csrf.TemplateField(r)
 	data.Email = r.FormValue("email")
-	u.Template.PasswordReset.Execute(w, r, data)
+	u.Template.ForgotPassword.Execute(w, r, data)
 }
 
 func (u Users) SendPasswordResetEmail(w http.ResponseWriter, r *http.Request) {
@@ -173,26 +174,31 @@ func (u Users) SendPasswordResetEmail(w http.ResponseWriter, r *http.Request) {
 	pr, err := u.PasswordResetService.Create(email)
 	if err != nil {
 		log.Printf("send password reset email: %+v", err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		return
 	}
-	err = u.EmailService.ForgotPassword(pr)
-	if err != nil {
-		log.Printf("send password reset email: %+v", err)
-	}
-	fmt.Fprintf(w, "password reset: %#v", pr)
+	u.Template.SendResetLink.Execute(w, r, nil)
+	go func() {
+		err := u.EmailService.ForgotPassword(pr)
+		if err != nil {
+			log.Printf("send password reset email: %+v", err)
+		}
+	}()
+	// fmt.Fprintf(w, "password reset: %#v", pr)
+
 }
 
-func (u Users) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+func (u Users) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Token     string
 		CSRFField template.HTML
 	}
 	data.CSRFField = csrf.TemplateField(r)
 	data.Token = r.FormValue("token")
-	u.Template.UpdatePassword.Execute(w, r, data)
+	u.Template.ResetPassword.Execute(w, r, data)
 }
 
-func (u Users) ExecutePasswordReset(w http.ResponseWriter, r *http.Request) {
+func (u Users) ExecuteResetPassword(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	password := r.FormValue("password")
 
@@ -209,4 +215,5 @@ func (u Users) ExecutePasswordReset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/signin", http.StatusSeeOther)
+
 }
