@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/csrf"
+	"github.com/slmkb/weblensgo/apperrors"
 	"github.com/slmkb/weblensgo/context"
 	"github.com/slmkb/weblensgo/models"
 	"golang.org/x/crypto/bcrypt"
@@ -16,7 +17,7 @@ import (
 
 type Users struct {
 	Template struct {
-		SignUp         Templater
+		Register       Templater
 		SignIn         Templater
 		ForgotPassword Templater
 		ResetPassword  Templater
@@ -24,8 +25,8 @@ type Users struct {
 	}
 	UserService          *models.UserService
 	SessionService       *models.SessionService
-	EmailService         *models.EmailService
 	PasswordResetService *models.PasswordResetService
+	EmailService         *models.EmailService
 }
 
 type UserMiddleware struct {
@@ -36,7 +37,9 @@ func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := readCookie(r, CookieSession)
 		if err != nil {
-			log.Printf("set user: %+v", err)
+			if !errors.Is(err, http.ErrNoCookie) {
+				log.Printf("set user: %+v", err)
+			}
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -68,21 +71,26 @@ func (umw UserMiddleware) RequireUser(next http.Handler) http.Handler {
 	})
 }
 
-func (u Users) New(w http.ResponseWriter, r *http.Request) {
+func (u Users) RegistrationForm(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Email     string
 		CSRFField template.HTML
 	}
 	data.CSRFField = csrf.TemplateField(r)
 	data.Email = r.FormValue("email")
-	u.Template.SignUp.Execute(w, r, data)
+	u.Template.Register.Execute(w, r, data)
 }
 
-func (u Users) Create(w http.ResponseWriter, r *http.Request) {
+func (u Users) ProcessRegistration(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 	user, err := u.UserService.Create(email, password)
 	if err != nil {
+		if errors.Is(err, models.ErrEmailTaken) {
+			err = apperrors.Public(err, "This email address is already associated with an account.")
+			u.Template.Register.Execute(w, r, nil, err)
+			return
+		}
 		http.Error(w, "User creation failed", http.StatusInternalServerError)
 		log.Printf("user create: %+v", err)
 		return
@@ -96,30 +104,28 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setCookie(w, CookieSession, session.Token)
-	http.Redirect(w, r, "/users/me", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
-func (u Users) Signin(w http.ResponseWriter, r *http.Request) {
+func (u Users) SignInForm(w http.ResponseWriter, r *http.Request) {
 	var data struct {
-		AuthError string
 		Email     string
 		CSRFField template.HTML
 	}
 	data.CSRFField = csrf.TemplateField(r)
 	data.Email = r.FormValue("email")
-	data.AuthError = r.FormValue("error")
 	u.Template.SignIn.Execute(w, r, data)
 }
 
-func (u Users) ExecuteSignIn(w http.ResponseWriter, r *http.Request) {
+func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
-	user, err := u.UserService.GetUser(email, password)
+	user, err := u.UserService.Authenticate(email, password)
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) || errors.Is(err, sql.ErrNoRows) {
-			url := fmt.Sprintf("/signin?error=1&email=%s", email)
-			http.Redirect(w, r, url, http.StatusSeeOther)
+			err = apperrors.Public(err, "Incorrect username or password.")
+			u.Template.SignIn.Execute(w, r, nil, err)
 			return
 		}
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
@@ -133,28 +139,27 @@ func (u Users) ExecuteSignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setCookie(w, CookieSession, session.Token)
-	http.Redirect(w, r, "/users/me", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Current user: %+v\n", context.User(r.Context()))
 }
 
-func (u Users) SignOut(w http.ResponseWriter, r *http.Request) {
+func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 	token, err := readCookie(r, CookieSession)
 	if err != nil {
 		log.Printf("sign out: %+v", err)
 		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
-	err = u.SessionService.DeleteSession(token)
+	err = u.SessionService.Delete(token)
 	if err != nil {
 		log.Printf("sign out: %+v", err)
 		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
 	deleteCookie(w, CookieSession)
-	log.Printf("logged out")
 	http.Redirect(w, r, "/signin", http.StatusFound)
 }
 
@@ -184,7 +189,6 @@ func (u Users) SendPasswordResetEmail(w http.ResponseWriter, r *http.Request) {
 			log.Printf("send password reset email: %+v", err)
 		}
 	}()
-	// fmt.Fprintf(w, "password reset: %#v", pr)
 
 }
 
@@ -198,7 +202,7 @@ func (u Users) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	u.Template.ResetPassword.Execute(w, r, data)
 }
 
-func (u Users) ExecuteResetPassword(w http.ResponseWriter, r *http.Request) {
+func (u Users) ProcessResetPassword(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	password := r.FormValue("password")
 
@@ -217,3 +221,23 @@ func (u Users) ExecuteResetPassword(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/signin", http.StatusSeeOther)
 
 }
+
+// func (u Users) NewGalleryForm(w http.ResponseWriter, r *http.Request) {
+// 	u.Template.Galleries.Execute(w, r, nil)
+// }
+
+// func (u Users) ProcessNewGallery(w http.ResponseWriter, r *http.Request) {
+// 	title := r.FormValue("name")
+// 	userID := context.User(r.Context()).ID
+// 	log.Printf(title, userID.String())
+// 	http.Redirect(w, r, "/galleries", http.StatusSeeOther)
+// }
+
+// func (u Users) UserGalleries(w http.ResponseWriter, r *http.Request) {
+// 	user := context.User(r.Context())
+// 	galleries, err := u.GalleryService.GetGalleries(user.ID)
+// 	if err != nil {
+// 		log.Printf("user galleries: %+v", err)
+// 	}
+// 	log.Panicf("%+v", galleries)
+// }

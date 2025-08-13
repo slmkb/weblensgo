@@ -66,7 +66,7 @@ func (ss *SessionService) GetUser(token string) (*User, error) {
 	return &user, nil
 }
 
-func (ss *SessionService) DeleteSession(token string) error {
+func (ss *SessionService) Delete(token string) error {
 	tokenHash := ss.hash(token)
 	_, err := ss.DB.Exec(`
 		DELETE

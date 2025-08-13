@@ -34,7 +34,7 @@
 {{end}}
 {{define "page"}}
 <section class="pico">
-    <h2>Log In</h2>
+    <h2>New gallery</h2>
     {{if errors}}
     {{range errors}}
     <div class="error">
@@ -42,19 +42,11 @@
     </div>
     {{end}}
     {{end}}
-    <form action="/signin" method="post">
-        <label for="email">Email</label>
-        <input id="email" type="email" name="email" placeholder="Enter Email" aria-label="email address"
-            autocomplete="email" required {{if .Email}}value="{{.Email}}" {{else}} autofocus {{end}} />
-        <label for="password">Password</label>
-        <input id="password" type="password" name="password" placeholder="Enter Password" aria-label="password" required
-            {{if .Email}} autofocus {{end}} />
+    <form action="/galleries/new" method="post">
+        <label for="title">Title</label>
+        <input id="title" type="title" name="title" placeholder="Gallery Title" aria-label="title" required autofocus />
         {{csrfField}}
-        <button type="submit">Sign Up</button>
+        <button type="submit">Create</button>
     </form>
-    <div class="auth-links">
-        <p>No account? <a href="/signup">Sign up</a></p>
-        <p>Forgot your password? <a href="/forgot-password">Reset password</a></p>
-    </div>
 </section>
 {{end}}

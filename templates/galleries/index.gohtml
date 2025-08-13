@@ -1,0 +1,82 @@
+{{define "style"}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css">
+<style>
+    section.pico {
+        margin: 0 auto;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background-color: rgb(39, 42.5, 50.5);
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .auth-links {
+        display: flex;
+        /* Use flexbox layout */
+        justify-content: space-between;
+        /* Spread out items with space in between */
+        width: 100%;
+        /* Ensure the container takes up the full width */
+    }
+
+    .auth-links p {
+        font-size: medium;
+        margin: 0;
+        /* Remove default margin */
+    }
+
+    .error p {
+        font-size: large;
+        color: lightcoral;
+    }
+</style>
+{{end}}
+{{define "page"}}
+<!-- <section> -->
+<h2>Your galleries</h2>
+{{if errors}}
+{{range errors}}
+<div class="error">
+    <p>{{.}}</p>
+</div>
+{{end}}
+{{end}}
+<table>
+    <thead>
+        <tr>
+            <th scope="col">Title</th>
+            <th scope="col">Images</th>
+            <th scope="col">Actions</th>
+            <th scope="col"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .}}
+        <tr>
+            <th>{{.Title}}</th>
+            <td>4,880</td>
+            <th>
+                <a href="/galleries/{{.GalleryHash}}"><button>View</button></a>
+                <a href="/galleries/{{.GalleryHash}}/edit"><button>Edit</button></a>
+                <a href="/galleries/{{.GalleryHash}}/delete"><button class="secondary pico-background-red-550 ">
+                        Delete</button></a>
+            </th>
+
+        </tr>
+        {{end}}
+    </tbody>
+    <!-- <tfoot>
+        <tr>
+            <th scope="row"></th>
+            <td></td>
+            <td></td>
+        </tr>
+    </tfoot> -->
+</table>
+<section>
+    <a href="/galleries/new">
+        <button class="secondary">Create new gallery</button>
+    </a>
+</section>
+{{end}}

@@ -21,16 +21,15 @@
         <li><a href="/">Home</a></li>
         <li><a href="/faq">FAQ</a></li>
         <li><a href="/contact">Contact</a></li>
+        <li><a href="/galleries">Galleries</a></li>
       </ul>
       <ul>
-        <!-- <li> -->
         {{ if not currentUser}}
         <li><a href="/signup">Sign up</a></li>
         <li><a href="/signin">Sign in</a></li>
         {{else}}
         <li><a href="/signout">Sign out</a></li>
         {{end}}
-        <!-- </li> -->
       </ul>
     </nav>
   </header>

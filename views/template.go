@@ -1,6 +1,7 @@
 package views
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -16,7 +17,11 @@ type Template struct {
 	htmlTpl *template.Template
 }
 
-func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any) {
+type public interface {
+	Public() string
+}
+
+func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any, errs ...error) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	tpl, err := t.htmlTpl.Clone()
 	if err != nil {
@@ -24,6 +29,7 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any) {
 		http.Error(w, "There was an error executing the template", http.StatusInternalServerError)
 		return
 	}
+	errMsgs := errorMessages(errs...)
 	tpl = tpl.Funcs(
 		template.FuncMap{
 			"csrfField": func() template.HTML {
@@ -31,6 +37,9 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any) {
 			},
 			"currentUser": func() *models.User {
 				return context.User(r.Context())
+			},
+			"errors": func() []string {
+				return errMsgs
 			},
 		},
 	)
@@ -52,6 +61,9 @@ func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
 			"currentUser": func() (template.HTML, error) {
 				return "", fmt.Errorf("loggedIn not implemented")
 			},
+			"errors": func() []string {
+				return nil
+			},
 		},
 	)
 	htmlTpl, err := htmlTpl.ParseFS(fs, patterns...)
@@ -70,4 +82,17 @@ func Must(t Template, err error) Template {
 		panic(err)
 	}
 	return t
+}
+
+func errorMessages(errs ...error) []string {
+	var msgs []string
+	for _, err := range errs {
+		var pubErr public
+		if errors.As(err, &pubErr) {
+			msgs = append(msgs, pubErr.Public())
+		} else {
+			msgs = append(msgs, "Something went wrong.")
+		}
+	}
+	return msgs
 }

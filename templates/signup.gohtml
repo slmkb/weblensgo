@@ -25,11 +25,24 @@
     margin: 0;
     /* Remove default margin */
   }
+
+  .error p {
+    font-size: large;
+    color: lightcoral;
+  }
 </style>
 {{end}}
 {{define "page"}}
 <section class="pico">
   <h2>Create account</h2>
+  {{if errors}}
+  {{range errors}}
+  <div class="error">
+    <p>{{.}}</p>
+  </div>
+  {{end}}
+  {{end}}
+
   <form action="/signup" method="post">
     <label for="email">Email</label>
     <input type="email" name="email" placeholder="Enter Email" aria-label="email address" autocomplete="email" required

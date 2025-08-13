@@ -9,7 +9,8 @@ import (
 type key string
 
 const (
-	userKey key = "user"
+	userKey      key = "user"
+	galleriesKey key = "galleries"
 )
 
 func WithUser(ctx context.Context, user *models.User) context.Context {
@@ -24,3 +25,16 @@ func User(ctx context.Context) *models.User {
 	}
 	return user
 }
+
+// func WithGalleries(ctx context.Context, galleries *map[string]string) context.Context {
+// 	return context.WithValue(ctx, galleriesKey, galleries)
+// }
+
+// func Galleries(ctx context.Context) *map[string]string {
+// 	val := ctx.Value(galleriesKey)
+// 	galleries, ok := val.(*map[string]string)
+// 	if !ok {
+// 		return nil
+// 	}
+// 	return galleries
+// }
