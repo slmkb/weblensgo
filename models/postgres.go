@@ -48,7 +48,7 @@ func Migrate(db *sql.DB, dir string) error {
 	}
 	err = goose.Up(db, dir)
 	if err != nil {
-		return fmt.Errorf("migrate: %w", err)
+		return fmt.Errorf("upmigrate: %w", err)
 	}
 	return nil
 }

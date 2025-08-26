@@ -17,27 +17,72 @@ import (
 	"github.com/slmkb/weblensgo/views"
 )
 
-func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("error loading .env file")
+type config struct {
+	PSQL models.PostgresConfig
+	SMTP models.SMTPConfig
+	CSRF struct {
+		Key    string
+		Secure bool
 	}
+	Server struct {
+		Address string
+	}
+}
 
-	cfg := models.DefaultPostgresConfig()
-	db, err := models.Open(cfg)
+func loadEnvConfig() (config, error) {
+	if err := godotenv.Load(); err != nil {
+		return config{}, err
+	}
+	cfg := config{
+		PSQL: models.PostgresConfig{
+			Host:     os.Getenv("PSQL_HOST"),
+			Port:     os.Getenv("PSQL_PORT"),
+			User:     os.Getenv("PSQL_USERNAME"),
+			Password: os.Getenv("PSQL_PASSWORD"),
+			Database: os.Getenv("PSQL_DATABASE"),
+			SSLMode:  os.Getenv("PSQL_SSLMODE"),
+		},
+		SMTP: models.SMTPConfig{
+			Host:     os.Getenv("SMTP_HOST"),
+			Port:     os.Getenv("SMTP_PORT"),
+			User:     os.Getenv("SMTP_USERNAME"),
+			Password: os.Getenv("SMTP_PASSWORD"),
+		},
+		CSRF: struct {
+			Key    string
+			Secure bool
+		}{
+			Key:    os.Getenv("CSRF_KEY"),
+			Secure: os.Getenv("CSRF_SECURE") == "true",
+		},
+		Server: struct{ Address string }{
+			Address: os.Getenv("HTTP_ADDRESS"),
+		},
+	}
+	return cfg, nil
+}
+
+func main() {
+
+	cfg, err := loadEnvConfig()
 	if err != nil {
-		log.Fatalf("database open: %v", err)
+		log.Fatalf("error loading config: %v", err)
+	}
+	if err := run(cfg); err != nil {
+		log.Fatalf("error run %v", err)
+	}
+}
+
+func run(cfg config) error {
+	db, err := models.Open(cfg.PSQL)
+	if err != nil {
+		return fmt.Errorf("database open: %v", err)
 	}
 	defer db.Close()
 
-	smtpServer, err := models.NewSMTPClient(
-		os.Getenv("SMTP_HOST"),
-		os.Getenv("SMTP_PORT"),
-		os.Getenv("SMTP_USERNAME"),
-		os.Getenv("SMTP_PASSWORD"),
-	)
+	smtpServer, err := models.NewSMTPClient(cfg.SMTP)
 	if err != nil {
-		log.Fatalf("smtpserver: %v", err)
+		return fmt.Errorf("smtpserver: %v", err)
 	}
 
 	usersCtrl := controllers.Users{
@@ -66,7 +111,7 @@ func main() {
 
 	err = models.MigrateFS(db, sqlFS.FS, "")
 	if err != nil {
-		log.Fatalf("migrate: %v", err)
+		return fmt.Errorf("migrate: %v", err)
 	}
 
 	homeTpl := views.Must(views.ParseFS(templates.FS, "base.gohtml", "home.gohtml"))
@@ -81,13 +126,14 @@ func main() {
 	galleryCtrl.Templates.New = views.Must(views.ParseFS(templates.FS, "base.gohtml", "galleries/new.gohtml"))
 	galleryCtrl.Templates.Edit = views.Must(views.ParseFS(templates.FS, "base.gohtml", "galleries/edit.gohtml"))
 	galleryCtrl.Templates.Delete = views.Must(views.ParseFS(templates.FS, "base.gohtml", "galleries/delete.gohtml"))
+	galleryCtrl.Templates.Show = views.Must(views.ParseFS(templates.FS, "base.gohtml", "galleries/show.gohtml"))
 	// usersCtrl.Template.Galleries = views.Must(views.ParseFS(templates.FS, "base.gohtml", "galleries/galleries.gohtml"))
 
 	csrfMw := csrf.Protect(
-		[]byte(os.Getenv("CSRF_KEY")),
-		csrf.Secure(false),
+		[]byte(cfg.CSRF.Key),
+		csrf.Secure(cfg.CSRF.Secure),
 		csrf.Path("/"),
-		csrf.TrustedOrigins([]string{"localhost:3000"}),
+		csrf.TrustedOrigins([]string{"localhost:3000", "localhost"}),
 		csrf.ErrorHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[CSRF BLOCKED] Host=%s, Method=%s, URL=%s, Origin=%s, Referer=%s, Reason=%v",
 				r.Host, r.Method, r.URL.String(), r.Header.Get("Origin"), r.Header.Get("Referer"), csrf.FailureReason(r))
@@ -112,6 +158,7 @@ func main() {
 	r.Get("/reset-password", usersCtrl.ResetPassword)
 	r.Post("/reset-password", usersCtrl.ProcessResetPassword)
 	r.Route("/galleries", func(r chi.Router) {
+
 		r.Group(func(r chi.Router) {
 			r.Use(userMw.RequireUser)
 			// r.Get("/", usersCtrl.CurrentUser)
@@ -122,11 +169,16 @@ func main() {
 			r.Post("/{hash}", galleryCtrl.Update)
 			r.Get("/{hash}/delete", galleryCtrl.Delete)
 			r.Post("/{hash}/delete", galleryCtrl.ConfirmDelete)
+			r.Get("/{hash}", galleryCtrl.Show)
+			r.Get("/{hash}/{filename}", galleryCtrl.Image)
+			r.Post("/{hash}/{filename}/delete", galleryCtrl.DeleteImage)
+			r.Post("/{hash}/images", galleryCtrl.UploadImage)
 		})
 	})
 	// r.With(userMw.RequireUser).Get("/users/me", usersCtrl.CurrentUser)
 
 	fmt.Println("Starting server...")
-	http.ListenAndServe(":3000", r)
+	http.ListenAndServe(cfg.Server.Address, r)
 	fmt.Println("Exiting...")
+	return nil
 }

@@ -10,20 +10,27 @@ import (
 	mail "github.com/xhit/go-simple-mail/v2"
 )
 
+type SMTPConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+}
+
 type EmailService struct {
 	SMTPServer *mail.SMTPServer
 }
 
-func NewSMTPClient(host, port, username, password string) (*mail.SMTPServer, error) {
+func NewSMTPClient(smtpConfig SMTPConfig) (*mail.SMTPServer, error) {
 	server := mail.NewSMTPClient()
-	server.Host = host
-	p, err := strconv.Atoi(port)
+	server.Host = smtpConfig.Host
+	p, err := strconv.Atoi(smtpConfig.Port)
 	if err != nil {
 		return nil, fmt.Errorf("es.Connect: %w", err)
 	}
 	server.Port = p
-	server.Username = username
-	server.Password = password
+	server.Username = smtpConfig.User
+	server.Password = smtpConfig.Password
 	server.Encryption = mail.EncryptionSTARTTLS
 
 	server.ConnectTimeout = 10 * time.Second

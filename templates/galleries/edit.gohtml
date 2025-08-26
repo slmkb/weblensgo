@@ -11,29 +11,63 @@
         max-width: 600px;
     }
 
-    .auth-links {
-        display: flex;
-        /* Use flexbox layout */
-        justify-content: space-between;
-        /* Spread out items with space in between */
-        width: 100%;
-        /* Ensure the container takes up the full width */
+    .gallery {
+        /* column-count: 7; */
+        column-width: 150px;
+        column-gap: 12px;
     }
 
-    .auth-links p {
-        font-size: medium;
-        margin: 0;
-        /* Remove default margin */
+    .gallery .item {
+        break-inside: avoid;
+        /* keep each card intact */
+        display: block;
+        margin-bottom: 12px;
+        position: relative;
+        /* vertical spacing */
+    }
+
+    .gallery img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 8px;
+        /* avoid inline gaps */
     }
 
     .error p {
         font-size: large;
         color: lightcoral;
     }
+
+    .text-right {
+        text-align: right;
+    }
+
+    .delete-form {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        margin: 0;
+    }
+
+    .delete-form button {
+        background: rgba(255, 0, 0, 0.5);
+        border: none;
+        color: white;
+        font-size: 14px;
+        line-height: 1;
+        padding: 4px 4px;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    .delete-form button:hover {
+        background: rgba(255, 0, 0, 1);
+    }
 </style>
 {{end}}
 {{define "page"}}
-<section class="pico">
+<section>
     <h2>Edit gallery</h2>
     {{if errors}}
     {{range errors}}
@@ -42,11 +76,69 @@
     </div>
     {{end}}
     {{end}}
-    <form action="/galleries/{{.Hash}}" method="post">
-        <label for="title">Title</label>
-        <input id="title" type="title" name="title" placeholder="{{.Title}}" aria-label="title" required autofocus />
-        {{csrfField}}
-        <button type="submit">Change</button>
+    <section class="pico">
+        <form action="/galleries/{{.GalleryHash}}/images" method="post" enctype="multipart/form-data">
+            {{csrfField}}
+
+            <label for="images">Add Images
+                <p>Please only upload jpg, png, and gif files.</p>
+            </label>
+            <input type="file" multiple accept="image/png, image/jpeg, image/gif" id="images" name="images" />
+
+            <button type="submit">Upload</button>
+        </form>
+    </section>
+    <form action="/galleries/{{.GalleryHash}}" method="post">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col" colspan="2">Title</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="2">
+                        <input id="title" type="text" name="title" value="{{.Title}}" aria-label="title" required
+                            autofocus>
+                        {{csrfField}}
+                    </td>
+                    <td>
+                        <button type="submit">Change</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </form>
+    <table>
+        <thead>
+            <th scope="col">
+
+            </th>
+            <th class="text-right">
+                <a href="/galleries/{{.GalleryHash}}"><button>View</button></a>
+                <a href="/galleries/{{.GalleryHash}}/delete"><button class="secondary pico-background-red-550 ">
+                        Delete</button></a>
+            </th>
+        </thead>
+    </table>
+
+
+
+    <div class="gallery">
+        {{$galleryHash := .GalleryHash}}
+        {{range .ImagePaths}}
+        <div class="item">
+            <a href="{{.}}">
+                <img src="{{.}}" alt="">
+            </a>
+            <form action="/galleries/{{$galleryHash}}/{{.}}/delete" method="post" class="delete-form"
+                onsubmit="return confirm('Delete this image? This cannot be undone.');">
+                {{csrfField}}
+                <button type="submit" aria-label="Delete image">✖</button>
+            </form>
+        </div>
+        {{end}}
+    </div>
 </section>
 {{end}}

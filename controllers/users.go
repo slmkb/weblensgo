@@ -219,25 +219,4 @@ func (u Users) ProcessResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/signin", http.StatusSeeOther)
-
 }
-
-// func (u Users) NewGalleryForm(w http.ResponseWriter, r *http.Request) {
-// 	u.Template.Galleries.Execute(w, r, nil)
-// }
-
-// func (u Users) ProcessNewGallery(w http.ResponseWriter, r *http.Request) {
-// 	title := r.FormValue("name")
-// 	userID := context.User(r.Context()).ID
-// 	log.Printf(title, userID.String())
-// 	http.Redirect(w, r, "/galleries", http.StatusSeeOther)
-// }
-
-// func (u Users) UserGalleries(w http.ResponseWriter, r *http.Request) {
-// 	user := context.User(r.Context())
-// 	galleries, err := u.GalleryService.GetGalleries(user.ID)
-// 	if err != nil {
-// 		log.Printf("user galleries: %+v", err)
-// 	}
-// 	log.Panicf("%+v", galleries)
-// }

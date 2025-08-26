@@ -42,7 +42,7 @@
     </div>
     {{end}}
     {{end}}
-    <form action="/galleries/{{.Hash}}/delete" method="post">
+    <form action="/galleries/{{.GalleryHash}}/delete" method="post">
         <label for="title">Please provide gallery name to confirm deletion</label>
         <input id="title" type="title" name="title" placeholder="{{.Title}}" aria-label="title" required autofocus />
         <input type="hidden" name="title.confirm" value="{{.Title}}">

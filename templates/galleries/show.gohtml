@@ -1,0 +1,49 @@
+{{define "style"}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css">
+<style>
+    .gallery {
+        column-count: 3;
+        column-gap: 12px;
+    }
+
+    .gallery .item {
+        break-inside: avoid;
+        /* keep each card intact */
+        display: block;
+        margin-bottom: 12px;
+        /* vertical spacing */
+    }
+
+    .gallery img {
+        width: 100%;
+        height: auto;
+        display: block;
+        /* avoid inline gaps */
+    }
+
+    .error p {
+        font-size: large;
+        color: lightcoral;
+    }
+</style>
+{{end}}
+{{define "page"}}
+<section>
+    {{if errors}}
+    {{range errors}}
+    <div class="error">
+        <p>{{.}}</p>
+    </div>
+    {{end}}
+    {{end}}
+    <h2>{{.Title}}</h2>
+    <div class="gallery">
+        {{range .ImagePaths}}
+
+        <a class="item" href="{{.}}">
+            <img src="{{.}}">
+        </a>
+        {{end}}
+    </div>
+</section>
+{{end}}
